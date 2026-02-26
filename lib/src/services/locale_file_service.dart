@@ -1,69 +1,56 @@
 import 'dart:convert';
+
 import 'package:flutter/services.dart';
-import 'package:flutter_translate/src/constants/constants.dart';
 
-class LocaleFileService
-{
-    static Future<Map<String, String>> getLocaleFiles(List<String> locales, String basePath) async
-    {
-        var localizedFiles = await _getAllLocaleFiles(basePath);
+class LocaleFileService {
+  const LocaleFileService._();
 
-        final files = new Map<String, String>();
+  static Future<Map<String, String>> getLocaleFiles(
+      List<String> locales, String basePath) async {
+    final localizedFiles = await _getAllLocaleFiles(basePath);
 
-        for(final language in locales.toSet())
-        {
-            var file = _findLocaleFile(language, localizedFiles, basePath);
+    final files = <String, String>{};
 
-            files[language] = file;
-        }
+    for (final language in locales.toSet()) {
+      final file = _findLocaleFile(language, localizedFiles, basePath);
 
-        return files;
+      files[language] = file;
     }
 
-    static Future<String?> getLocaleContent(String file) async
-    {
-        final ByteData? data = await rootBundle.load(file);
+    return files;
+  }
 
-        if (data == null) return null;
-        
-        return utf8.decode(data.buffer.asUint8List());
+  static Future<String?> getLocaleContent(String file) async {
+    final data = await rootBundle.load(file);
+    final bytes = data.buffer.asUint8List();
+
+    if (bytes.isEmpty) return null;
+
+    return utf8.decode(bytes);
+  }
+
+  static Future<List<String>> _getAllLocaleFiles(String basePath) async {
+    final assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+    final assets = assetManifest.listAssets();
+
+    final separator = basePath.endsWith('/') ? '' : '/';
+
+    return assets.where((x) => x.startsWith('$basePath$separator')).toList();
+  }
+
+  static String _findLocaleFile(
+      String languageCode, List<String> localizedFiles, String basePath) {
+    final file = _getFilepath(languageCode, basePath);
+
+    if (!localizedFiles.contains(file) && languageCode.contains('_')) {
+      return _getFilepath(languageCode.split('_').first, basePath);
     }
 
-    static Future<List<String>> _getAllLocaleFiles(String basePath) async
-    {
-        final manifest = await rootBundle.loadString(Constants.assetManifestFilename);
+    return file;
+  }
 
-        Map<String, dynamic> map = jsonDecode(manifest);
-
-        var separator = basePath.endsWith('/') ? '' : '/';
-
-        return map.keys.where((x) => x.startsWith('$basePath$separator')).toList();
-    }
-
-    static String _findLocaleFile(String languageCode, List<String> localizedFiles, String basePath)
-    {
-        var file = _getFilepath(languageCode, basePath);
-
-        if(!localizedFiles.contains(file))
-        {
-            if(languageCode.contains('_'))
-            {
-                file = _getFilepath(languageCode.split('_').first, basePath);
-            }
-        }
-
-        if(file == null)
-        {
-            throw new Exception('The asset file for the language "$languageCode" was not found.');
-        }
-
-        return file;
-    }
-
-    static String? _getFilepath(String languageCode, String basePath)
-    {
-        var separator = basePath.endsWith('/') ? '' : '/';
-
-        return '$basePath$separator$languageCode.json';
-    }
+  static String _getFilepath(String languageCode, String basePath) {
+    final separator = basePath.endsWith('/') ? '' : '/';
+    return '$basePath$separator$languageCode.json';
+  }
 }
