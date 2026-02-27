@@ -6,7 +6,8 @@ import 'package:flutter_translate_fix/flutter_translate_fix.dart';
 void main() async {
   var delegate = await LocalizationDelegate.create(
     fallbackLocale: 'en_US',
-    supportedLocales: ['en_US', 'es', 'fa', 'ar', 'ru'],
+    supportedLocales: ['en_US', 'pt_PT', 'es', 'fa', 'ar', 'ru'],
+    missingTranslationStrategy: MissingTranslationStrategy.FALLBACK,
   );
 
   runApp(LocalizedApp(delegate, MyApp()));
@@ -144,6 +145,10 @@ class _MyHomePageState extends State<MyHomePage> {
           CupertinoActionSheetAction(
             child: Text(translate('language.name.ru')),
             onPressed: () => Navigator.pop(context, 'ru'),
+          ),
+          CupertinoActionSheetAction(
+            child: Text(translate('language.name.pt')),
+            onPressed: () => Navigator.pop(context, 'pt_PT'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(

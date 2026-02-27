@@ -12,12 +12,15 @@ class LocalizationDelegate extends LocalizationsDelegate<Localization> {
 
   final Map<Locale, String> supportedLocalesMap;
 
+  final MissingTranslationStrategy missingKeyStrategy;
+
   LocaleChangedCallback? onLocaleChanged;
 
   LocalizationDelegate._(
     this.fallbackLocale,
     this.supportedLocales,
     this.supportedLocalesMap,
+    this.missingKeyStrategy,
   );
 
   static late Locale _currentLocale;
@@ -30,12 +33,7 @@ class LocalizationDelegate extends LocalizationsDelegate<Localization> {
 
     if (_currentLocale == locale) return;
 
-    final localizedContent = await LocaleService.getLocaleContent(
-      locale,
-      supportedLocalesMap,
-    );
-
-    Localization.load(localizedContent);
+    await _loadLocalizedContent(locale);
 
     _currentLocale = locale;
 
@@ -46,10 +44,43 @@ class LocalizationDelegate extends LocalizationsDelegate<Localization> {
     }
   }
 
+  /// Creates and initializes a [LocalizationDelegate].
+  ///
+  /// This method handles the complete setup of the localization system.
+  /// It ensures bindings are initialized, loads locale maps from assets,
+  /// validates the configuration, and loads the initial translations.
+  ///
+  /// The method automatically sets the initial locale based on the device's
+  /// preferred language if it is supported; otherwise, it defaults to
+  /// [fallbackLocale].
+  ///
+  /// Example usage:
+  /// ```dart
+  /// final delegate = await LocalizationDelegate.create(
+  ///   fallbackLocale: 'en',
+  ///   supportedLocales: ['en', 'es', 'fr'],
+  /// );
+  /// ```
+  ///
+  /// Parameters:
+  /// - [fallbackLocale]: The default locale code (e.g., 'en_US') used when
+  ///   a translation is missing or the device locale is not supported.
+  ///   This must be present in [supportedLocales].
+  /// - [supportedLocales]: A list of locale codes that the application
+  ///   supports (e.g., `['en', 'es', 'fr']`).
+  /// - [basePath]: The asset path where localization files are stored.
+  ///   Defaults to [Constants.localizedAssetsPath].
+  /// - [missingTranslationStrategy]: The strategy to handle missing keys
+  ///   (e.g., show the key or fallback to the default language).
+  ///   Defaults to [MissingTranslationStrategy.KEY].
+  ///
+  /// Returns a [Future] that resolves to a fully initialized [LocalizationDelegate].
   static Future<LocalizationDelegate> create({
     required String fallbackLocale,
     required List<String> supportedLocales,
     String basePath = Constants.localizedAssetsPath,
+    MissingTranslationStrategy missingTranslationStrategy =
+        MissingTranslationStrategy.KEY,
   }) async {
     WidgetsFlutterBinding.ensureInitialized();
 
@@ -65,7 +96,16 @@ class LocalizationDelegate extends LocalizationsDelegate<Localization> {
 
     _currentLocale = LocaleService.loadDeviceLocale() ?? fallback;
 
-    return LocalizationDelegate._(fallback, locales, localesMap);
+    final instance = LocalizationDelegate._(
+      fallback,
+      locales,
+      localesMap,
+      missingTranslationStrategy,
+    );
+
+    await instance._loadLocalizedContent(_currentLocale);
+
+    return instance;
   }
 
   @override
@@ -82,4 +122,27 @@ class LocalizationDelegate extends LocalizationsDelegate<Localization> {
 
   @override
   bool shouldReload(LocalizationsDelegate<Localization> old) => true;
+
+  Future<Map<String, dynamic>?> _fallbackContent(Locale fallbackLocale) async {
+    switch (missingKeyStrategy) {
+      case MissingTranslationStrategy.KEY:
+        return null;
+      case MissingTranslationStrategy.FALLBACK:
+        return await LocaleService.getLocaleContent(
+          fallbackLocale,
+          supportedLocalesMap,
+        );
+    }
+  }
+
+  Future<void> _loadLocalizedContent(Locale locale) async {
+    final localizedContent = await LocaleService.getLocaleContent(
+      locale,
+      supportedLocalesMap,
+    );
+
+    final fallbackContent = await _fallbackContent(fallbackLocale);
+
+    Localization.load(localizedContent, fallbackContent);
+  }
 }

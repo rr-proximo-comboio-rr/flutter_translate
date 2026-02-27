@@ -1,0 +1,15 @@
+{
+  "app_bar": {
+    "title": "Bem-vindo/a à página principal"
+  },
+  "button": {
+    "cancel": "Cancelar",
+    "change_language": "Mudar linguagem"
+  },
+  "plural": {
+    "demo": {
+      "zero": "0x",
+      "two": "2x"
+    }
+  }
+}
