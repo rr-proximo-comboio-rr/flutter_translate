@@ -94,7 +94,9 @@ class LocalizationDelegate extends LocalizationsDelegate<Localization> {
 
     ConfigurationValidator.validate(fallback, locales);
 
-    _currentLocale = LocaleService.loadDeviceLocale() ?? fallback;
+    _currentLocale =
+        LocaleService.findLocale(LocaleService.loadDeviceLocale(), locales) ??
+            fallback;
 
     final instance = LocalizationDelegate._(
       fallback,
