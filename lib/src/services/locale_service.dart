@@ -17,13 +17,13 @@ class LocaleService {
     return files.map((x, y) => MapEntry(localeFromString(x), y));
   }
 
-  static Locale? findLocale(Locale locale, List<Locale> supportedLocales) {
+  static Locale? findLocale(Locale? locale, List<Locale> supportedLocales) {
     Locale? existing = supportedLocales.firstWhereOrNull((e) => e == locale);
 
     if (existing != null) return existing;
 
     return supportedLocales.firstWhereOrNull(
-      (e) => e.languageCode == locale.languageCode,
+      (e) => e.languageCode == locale?.languageCode,
     );
   }
 
